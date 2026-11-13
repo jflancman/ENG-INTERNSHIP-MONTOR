@@ -1,0 +1,34 @@
+name: Internship watcher
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"   # every 2 hours (UTC)
+  workflow_dispatch:          # lets you click "Run workflow" to test it
+
+permissions:
+  contents: write             # needed to save seen_internships.json back to the repo
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
+      - run: python internship_watch.py
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+
+      - name: Save seen jobs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add seen_internships.json
+          git diff --cached --quiet || git commit -m "Update seen jobs"
+          git push
